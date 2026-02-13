@@ -175,6 +175,8 @@
             box-shadow: 0 10px 40px rgba(255, 105, 180, 0.2);
             max-width: 500px;
             width: 100%;
+            position: relative;
+            z-index: 1;
         }
 
         .question-container.active {
@@ -205,9 +207,8 @@
             display: flex;
             gap: 20px;
             justify-content: center;
-            position: relative;
-            min-height: 150px;
             align-items: center;
+            min-height: 80px;
         }
 
         .love-btn {
@@ -235,8 +236,9 @@
         .no-btn {
             background: linear-gradient(135deg, #ddd, #bbb);
             color: #666;
-            position: absolute;
+            position: fixed;
             transition: all 0.15s ease-out;
+            z-index: 9999;
         }
 
         /* Final Screen */
@@ -461,9 +463,9 @@
 <!-- Question Screen -->
 <div class="question-container" id="questionScreen">
     <h1>Do you love me so much? 💕</h1>
-    <div class="button-group" onmousemove="runAway(event)">
+    <div class="button-group">
         <button class="love-btn yes-btn" onclick="handleYes()">Yes! 💖</button>
-        <button class="love-btn no-btn" id="noBtn" onmouseover="runAway(event)">No</button>
+        <button class="love-btn no-btn" id="noBtn">No</button>
     </div>
 </div>
 
@@ -480,6 +482,8 @@
 </div>
 
 <script>
+    let isQuestionScreenActive = false;
+
     // Toggle image selection
     function toggleImage(cell) {
         const checkbox = cell.querySelector('input[type="checkbox"]');
@@ -499,24 +503,34 @@
         setTimeout(() => {
             captchaScreen.style.display = 'none';
             questionScreen.classList.add('active');
+            isQuestionScreenActive = true;
             startHearts();
+
+            // Initialize No button position
+            const noBtn = document.getElementById('noBtn');
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            noBtn.style.left = (windowWidth / 2 + 100) + 'px';
+            noBtn.style.top = (windowHeight / 2) + 'px';
         }, 800);
     }
 
-    // No button runs away continuously and aggressively
-    function runAway(event) {
+    // No button runs away anywhere on screen
+    document.addEventListener('mousemove', function(event) {
+        if (!isQuestionScreenActive) return;
+
         const noBtn = document.getElementById('noBtn');
-        const container = document.querySelector('.button-group');
-        const containerRect = container.getBoundingClientRect();
+        if (!noBtn) return;
+
         const btnRect = noBtn.getBoundingClientRect();
 
-        // Get mouse position relative to container
-        const mouseX = event.clientX - containerRect.left;
-        const mouseY = event.clientY - containerRect.top;
+        // Get mouse position
+        const mouseX = event.clientX;
+        const mouseY = event.clientY;
 
         // Calculate button center position
-        const btnCenterX = btnRect.left - containerRect.left + btnRect.width / 2;
-        const btnCenterY = btnRect.top - containerRect.top + btnRect.height / 2;
+        const btnCenterX = btnRect.left + btnRect.width / 2;
+        const btnCenterY = btnRect.top + btnRect.height / 2;
 
         // Calculate distance from mouse
         const distance = Math.sqrt(Math.pow(btnCenterX - mouseX, 2) + Math.pow(btnCenterY - mouseY, 2));
@@ -532,26 +546,30 @@
             const dirX = deltaX / magnitude;
             const dirY = deltaY / magnitude;
 
-            // Move button 4x away from mouse
+            // Move button 200px away from mouse
             let newX = btnCenterX + dirX * 200;
             let newY = btnCenterY + dirY * 200;
 
-            // Keep within bounds
-            const maxX = containerRect.width - noBtn.offsetWidth;
-            const maxY = 100;
+            // Get viewport dimensions
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
 
-            newX = Math.max(-100, Math.min(maxX + 100, newX - noBtn.offsetWidth / 2));
-            newY = Math.max(-50, Math.min(maxY, newY - noBtn.offsetHeight / 2));
+            // Keep within viewport bounds
+            newX = Math.max(noBtn.offsetWidth / 2, Math.min(windowWidth - noBtn.offsetWidth / 2, newX));
+            newY = Math.max(noBtn.offsetHeight / 2, Math.min(windowHeight - noBtn.offsetHeight / 2, newY));
 
-            noBtn.style.left = newX + 'px';
-            noBtn.style.top = newY + 'px';
+            // Set position (adjusted for button center)
+            noBtn.style.left = (newX - noBtn.offsetWidth / 2) + 'px';
+            noBtn.style.top = (newY - noBtn.offsetHeight / 2) + 'px';
         }
-    }
+    });
 
     // Handle Yes click
     function handleYes() {
         const questionScreen = document.getElementById('questionScreen');
         const finalScreen = document.getElementById('finalScreen');
+
+        isQuestionScreenActive = false;
 
         // Create confetti
         for (let i = 0; i < 100; i++) {
